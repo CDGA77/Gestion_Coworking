@@ -117,3 +117,87 @@ CROSS JOIN
 ORDER BY random()
 LIMIT 100;
 
+-----------//--------------------------------///---------------------
+
+--Un Usuario pueda reservar un espacio de trabajo en una sesión x
+
+INSERT INTO Reserva (id_usuario, id_espacio, id_sesion, fecha_reserva)
+VALUES (
+    (SELECT id_usuario FROM Usuario WHERE nombre = 'Usuario 1' LIMIT 1),
+    (SELECT et.id_espacio 
+     FROM Espacio_Trabajo et 
+     JOIN Sala s ON et.id_sala = s.id_sala 
+     WHERE et.fila = 1 AND et.columna = 1 AND s.nombre = 'Sala 1' 
+     LIMIT 1), 
+    (SELECT id_sesion 
+     FROM Sesion 
+     WHERE fecha_inicio = '2023-06-02 09:00:00' AND fecha_fin = '2023-06-02 18:00:00' 
+     LIMIT 1),  
+    CURRENT_TIMESTAMP
+);
+
+---------///-------------------///-------------------
+
+--Un usuario pueda cancelar una reserva
+
+DELETE FROM Reserva
+WHERE id_reserva = (
+    SELECT id_reserva
+    FROM Reserva
+    WHERE id_usuario = (SELECT id_usuario FROM Usuario WHERE nombre = 'Usuario 1')
+    ORDER BY fecha_reserva DESC
+    LIMIT 1
+);
+-----------------------///------------------------///------
+
+ -- Mostrar solo espacios no reservados en la sesión con ID 1
+SELECT et.*
+FROM Espacio_Trabajo et
+LEFT JOIN Reserva r ON et.id_espacio = r.id_espacio AND r.id_sesion = 1
+WHERE et.id_sala = 1
+    AND r.id_reserva IS NULL;
+
+----------------///------------------///----------
+
+
+
+-- Mostrar solo espacios reservados en la sesión con ID 1
+SELECT *
+FROM Espacio_Trabajo et
+JOIN Reserva r ON et.id_espacio = r.id_espacio AND r.id_sesion = 1
+WHERE et.id_sala = 1; 
+
+
+------------------------////--------------------///
+
+ --Ver las sesiones con orden por las más ocupadas.
+SELECT s.id_sesion, COUNT(r.id_reserva) AS reservas_totales
+FROM Sesion s
+LEFT JOIN Reserva r ON s.id_sesion = r.id_sesion
+GROUP BY s.id_sesion
+ORDER BY reservas_totales DESC;
+
+
+--Ver las sesiones con orden por las más disponibles.
+SELECT s.id_sesion, COUNT(r.id_reserva) AS reservas_totales
+FROM Sesion s
+LEFT JOIN Reserva r ON s.id_sesion = r.id_sesion
+GROUP BY s.id_sesion
+ORDER BY reservas_totales ASC;
+
+-------------------///---------------------//---------
+
+-- Ver la lista de espacios de trabajo asignados a un usuario.
+SELECT et.*
+FROM Espacio_Trabajo et
+JOIN Reserva r ON et.id_espacio = r.id_espacio
+WHERE r.id_usuario = 1; -- ID del usuario del que se desea ver los espacios asignados
+
+-------------------///------------------------//-----------
+
+ --Ver la lista de espacios de trabajo asignados a una sesión.
+
+SELECT et.*
+FROM Espacio_Trabajo et
+JOIN Reserva r ON et.id_espacio = r.id_espacio
+WHERE r.id_sesion = 1; -- ID de la sesión de la que se desea ver los espacios asignados
